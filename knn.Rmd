@@ -1,0 +1,177 @@
+
+---
+title: "pos_mineracao_knn"
+output:
+  html_document:
+    toc: true
+---
+
+
+```{r}
+library(ggplot2)
+library(MASS)
+help(biopsy)
+```
+
+
+```{r}
+%md
+###Exploração do dataset
+```
+
+
+```{r}
+head(biopsy)
+```
+
+
+```{r}
+dim(biopsy)
+```
+
+
+```{r}
+str(biopsy)
+```
+
+
+```{r}
+summary(biopsy)
+```
+
+
+```{r}
+par(mfrow=c(4,3))
+boxplot(biopsy$V1, xlab='clump thickness')
+boxplot(biopsy$V2, xlab='uniformity of cell size')
+boxplot(biopsy$V3, xlab='uniformity of cell shape')
+boxplot(biopsy$V4, xlab='marginal adhesion')
+boxplot(biopsy$V5, xlab='single epithelial cell size')
+boxplot(biopsy$V6, xlab='bare nuclei')
+boxplot(biopsy$V7, xlab='bland chromatin')
+boxplot(biopsy$V8, xlab='normal nucleoli')
+boxplot(biopsy$V9, xlab='mitoses')
+```
+
+
+```{r}
+par(mfrow=c(4,3))
+hist(biopsy$V1, xlab='clump thickness', main='Histograma')
+hist(biopsy$V2, xlab='uniformity of cell size', main='Histograma')
+hist(biopsy$V3, xlab='uniformity of cell shape', main='Histograma')
+hist(biopsy$V4, xlab='marginal adhesion', main='Histograma')
+hist(biopsy$V5, xlab='single epithelial cell size', main='Histograma')
+hist(biopsy$V6, xlab='bare nuclei', main='Histograma')
+hist(biopsy$V7, xlab='bland chromatin', main='Histograma')
+hist(biopsy$V8, xlab='normal nucleoli', main='Histograma')
+hist(biopsy$V9, xlab='mitoses', main='Histograma')
+barplot(table(biopsy$class),xlab='Class', main='Barplot')
+```
+
+
+```{r}
+par(mfrow=c(4,3))
+plot(density(biopsy$V1))
+plot(density(biopsy$V2))
+plot(density(biopsy$V3))
+plot(density(biopsy$V4))
+plot(density(biopsy$V5))
+plot(density(biopsy$V7))
+plot(density(biopsy$V8))
+plot(density(biopsy$V9))
+```
+
+
+```{r}
+cor(biopsy[,2:10])
+```
+
+
+```{r}
+%md
+##Preparação dos dados / KNN
+```
+
+
+```{r}
+library(class)
+set.seed(42)
+```
+
+
+```{r}
+#Questão 7
+
+biopsy_q7 <- subset(na.omit(biopsy), select=c('V1','V2','V3','V4','V5','V6','V7','V8','V9','class'))
+#one hot encoding, dados categoricos
+benign <- ifelse(biopsy_q7$class=='benign',1,0)
+malignant <- ifelse(biopsy_q7$class=='malignant',1,0)
+
+biopsy_q7 = cbind(biopsy_q7[,1:9],benign,malignant)
+acc = c(1:100)*0
+
+for (i in 1:100) {
+  L <- sample(1:nrow(biopsy_q7),round(nrow(biopsy_q7)/3))
+  train <- biopsy_q7[-L,1:9]
+  test <- biopsy_q7[L,1:9]
+  cl <- factor(biopsy_q7[-L,10])
+  fit <- knn(train,test,cl,k=5)
+  c_matrix = table(fit[1:length(L)],factor(biopsy_q7[L,10]))
+  acc[i] = sum(diag(c_matrix))/sum(c_matrix)*100
+  
+}
+mean(acc)
+```
+
+
+```{r}
+#Questão 8
+
+biopsy_q8 <- subset(na.omit(biopsy), select=c('V1','V2','V3','V4','V5','V7','V8','V9','class'))
+#one hot encoding, dados categoricos
+benign <- ifelse(biopsy_q8$class=='benign',1,0)
+malignant <- ifelse(biopsy_q8$class=='malignant',1,0)
+
+biopsy_q8 = cbind(biopsy_q8[,1:8],benign,malignant)
+acc = c(1:100)*0
+
+for (i in 1:100) {
+  L <- sample(1:nrow(biopsy_q8),round(nrow(biopsy_q8)/3))
+  train <- biopsy_q8[-L,1:8]
+  test <- biopsy_q8[L,1:8]
+  cl <- factor(biopsy_q8[-L,9])
+  fit <- knn(train,test,cl,k=5)
+  c_matrix = table(fit[1:length(L)],factor(biopsy_q8[L,9]))
+  acc[i] = sum(diag(c_matrix))/sum(c_matrix)*100
+  
+}
+mean(acc)
+```
+
+
+```{r}
+#Questão 9 e 10 com k dinâmico
+
+biopsy_q9 <- subset(na.omit(biopsy), select=c('V1','V2','V3','V4','V5','V6','V7','V8','V9','class'))
+#one hot encoding, dados categoricos
+benign <- ifelse(biopsy_q9$class=='benign',1,0)
+malignant <- ifelse(biopsy_q9$class=='malignant',1,0)
+
+biopsy_q9 = cbind(biopsy_q9[,1:9],benign,malignant)
+acc = c(1:100)*0
+
+for(i in c(2,5,12)){
+  for (j in 1:100) {
+  L <- sample(1:nrow(biopsy_q9),round(nrow(biopsy_q9)/3))
+  train <- biopsy_q9[-L,1:9]
+  test <- biopsy_q9[L,1:9]
+  cl <- factor(biopsy_q9[-L,10])
+  fit <- knn(train,test,cl,k=i)
+  c_matrix = table(fit[1:length(L)],factor(biopsy_q9[L,10]))
+  acc[j] = sum(diag(c_matrix))/sum(c_matrix)*100  
+  }
+  cat("Média Para k: ", i, "= ", mean(acc), "\n")
+}
+
+```
+
